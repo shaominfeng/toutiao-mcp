@@ -144,8 +144,14 @@ export class TouTiaoAuth {
       for (let i = 0; i < waitTime; i++) {
         const currentUrl = await driver.getCurrentUrl();
 
-        // 检查是否跳转到创作者中心
+        // 检查是否跳转到创作者中心或主页
+        // 登录成功后可能跳转到以下任一页面：
+        // 1. https://www.toutiao.com/?is_new_connect=0&is_new_user=0&wid=xxx (登录后的主页)
+        // 2. https://mp.toutiao.com/profile_v4/ (创作者中心)
+        // 3. https://creator.toutiao.com (创作者平台)
+        // 4. https://mp.toutiao.com/dashboard (仪表盘)
         if (
+          currentUrl.includes('www.toutiao.com/?is_new_connect') || // 登录后主页
           currentUrl.includes('mp.toutiao.com/profile') ||
           currentUrl.includes('creator.toutiao.com') ||
           currentUrl.includes('mp.toutiao.com/dashboard')
