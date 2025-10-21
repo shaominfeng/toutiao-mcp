@@ -9,9 +9,17 @@
     "dev": "tsx src/index.ts",
     "start": "node dist/index.js",
     "login": "tsx src/scripts/login.ts",
-    "test": "tsx src/scripts/test-publish.ts"
+    "test": "tsx src/scripts/test-publish.ts",
+    "auto-publish": "tsx src/scripts/auto-publish-news.ts",
+    "auto-publish-ai": "tsx src/scripts/auto-publish-with-ai.ts",
+    "auto-publish-knowledge": "tsx src/scripts/auto-publish-knowledge.ts"
   },
-  "keywords": ["toutiao", "mcp", "content-publishing", "automation"],
+  "keywords": [
+    "toutiao",
+    "mcp",
+    "content-publishing",
+    "automation"
+  ],
   "author": "",
   "license": "MIT",
   "devDependencies": {
@@ -23,6 +31,9 @@
     "@modelcontextprotocol/sdk": "^1.20.1",
     "@types/selenium-webdriver": "^4.35.1",
     "axios": "^1.12.2",
+    "docx": "^9.5.1",
+    "dotenv": "^17.2.3",
+    "markdown-it": "^14.1.0",
     "selenium-webdriver": "^4.37.0",
     "sharp": "^0.34.4"
   }
