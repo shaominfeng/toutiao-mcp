@@ -7,7 +7,7 @@ import * as os from 'os';
 
 // 今日头条相关 URL
 export const TOUTIAO_URLS = {
-  login: 'https://sso.toutiao.com/login',
+  login: 'https://mp.toutiao.com/auth/page/login',
   homepage: 'https://mp.toutiao.com/profile_v4/index',
   userInfo: 'https://mp.toutiao.com/profile_v4/user/info',
 

@@ -81,10 +81,14 @@ export class TouTiaoPublisher {
    * 将 Cookie 传递给浏览器
    */
   private async transferCookiesToDriver(driver: WebDriver): Promise<void> {
+    // 先访问今日头条域名，这样才能添加该域名的 Cookie
     await driver.get('https://mp.toutiao.com');
-    await driver.sleep(2000);
+    await driver.sleep(1000);
 
     const cookies = this.auth.getCookies();
+    console.log(`准备添加 ${cookies.length} 个 Cookie...`);
+
+    let addedCount = 0;
     for (const cookie of cookies) {
       if (cookie.domain && cookie.domain.includes('.toutiao.com')) {
         try {
@@ -94,13 +98,29 @@ export class TouTiaoPublisher {
             domain: cookie.domain,
             path: cookie.path,
           });
+          addedCount++;
         } catch (error) {
-          console.warn(`添加 Cookie 失败: ${error}`);
+          console.warn(`添加 Cookie 失败 (${cookie.name}): ${error}`);
         }
       }
     }
 
-    console.log('已将登录 Cookie 传递给浏览器');
+    console.log(`已添加 ${addedCount} 个 Cookie`);
+
+    // 重要：刷新页面让 Cookie 生效
+    console.log('刷新页面以使 Cookie 生效...');
+    await driver.navigate().refresh();
+    await driver.sleep(2000);
+
+    // 验证 Cookie 是否生效
+    const currentUrl = await driver.getCurrentUrl();
+    console.log(`Cookie 传递后的页面URL: ${currentUrl}`);
+
+    if (currentUrl.includes('profile')) {
+      console.log('✅ Cookie 已成功生效，已登录状态');
+    } else {
+      console.warn('⚠️ Cookie 可能未生效，请检查');
+    }
   }
 
   /**
@@ -278,10 +298,17 @@ export class TouTiaoPublisher {
 
       console.log('正在打开微头条发布页面...');
       await driver.get('https://mp.toutiao.com/profile_v4/weitoutiao/publish?from=toutiao_pc');
-      await driver.sleep(15000);
 
+      // 等待页面加载
+      console.log('等待页面加载...');
+      await driver.sleep(5000);
+
+      // 检查当前URL
       const currentUrl = await driver.getCurrentUrl();
+      console.log(`当前页面URL: ${currentUrl}`);
+
       if (currentUrl.includes('login') || currentUrl.includes('auth')) {
+        console.error('页面跳转到登录页面，Cookie可能已过期');
         return {
           success: false,
           message: '需要重新登录，Cookie可能已过期',
@@ -294,34 +321,42 @@ export class TouTiaoPublisher {
       const editorSelectors = [
         '.ProseMirror',
         'div.ProseMirror',
-        'textarea',
         "[contenteditable='true']",
+        'textarea',
         "div[role='textbox']",
       ];
 
       for (const selector of editorSelectors) {
         try {
-          editor = await driver.wait(until.elementLocated(By.css(selector)), 30000);
+          console.log(`尝试查找编辑器: ${selector}`);
+          editor = await driver.wait(until.elementLocated(By.css(selector)), 10000);
           if (await editor.isDisplayed()) {
             console.log(`✅ 找到编辑器元素: ${selector}`);
             break;
           }
           editor = null;
         } catch (e) {
+          console.log(`未找到编辑器: ${selector}`);
           continue;
         }
       }
 
       if (!editor) {
+        // 获取页面源代码用于调试
+        const pageSource = await driver.getPageSource();
+        console.error('未找到编辑器元素');
+        console.error('页面源代码片段:', pageSource.substring(0, 500));
         return {
           success: false,
-          message: '编辑器加载超时',
+          message: '编辑器加载失败，请检查页面是否正常加载。可能需要重新登录。',
         };
       }
 
       // 输入内容
       console.log('正在输入微头条内容...');
       const tagName = await editor.getTagName();
+      console.log(`编辑器元素类型: ${tagName}`);
+
       if (tagName.toLowerCase() === 'textarea') {
         await editor.clear();
         await editor.sendKeys(microContent);
@@ -341,21 +376,74 @@ export class TouTiaoPublisher {
       await driver.sleep(2000);
 
       // 点击发布按钮
-      console.log('正在点击发布按钮...');
-      const publishButton = await driver.wait(
-        until.elementLocated(By.xpath("//button[contains(text(), '发布')]")),
-        10000
-      );
-      await publishButton.click();
-      await driver.sleep(2000);
+      console.log('正在查找发布按钮...');
+      try {
+        let publishButton = null;
 
-      console.log('微头条发布成功');
-      return {
-        success: true,
-        message: '微头条发布成功',
-      };
+        // 尝试多种选择器来定位发布按钮
+        const buttonSelectors = [
+          'button.publish-content', // 通过 class 定位
+          "button[class*='publish-content']", // 包含 publish-content 的按钮
+          "//button[contains(@class, 'publish-content')]", // XPath 通过 class
+          "//button[span[text()='发布']]", // XPath 查找包含 span 文字为"发布"的按钮
+          "//button[contains(., '发布')]", // XPath 查找包含"发布"文字的按钮（任意层级）
+        ];
+
+        for (const selector of buttonSelectors) {
+          try {
+            console.log(`尝试选择器: ${selector}`);
+            if (selector.startsWith('//')) {
+              // XPath 选择器
+              publishButton = await driver.wait(
+                until.elementLocated(By.xpath(selector)),
+                5000
+              );
+            } else {
+              // CSS 选择器
+              publishButton = await driver.wait(
+                until.elementLocated(By.css(selector)),
+                5000
+              );
+            }
+
+            if (publishButton && await publishButton.isDisplayed()) {
+              console.log(`✅ 找到发布按钮: ${selector}`);
+              break;
+            }
+            publishButton = null;
+          } catch (e) {
+            console.log(`未找到发布按钮: ${selector}`);
+            continue;
+          }
+        }
+
+        if (!publishButton) {
+          console.error('所有选择器都无法找到发布按钮');
+          return {
+            success: false,
+            message: '找不到发布按钮，页面结构可能已更改',
+          };
+        }
+
+        console.log('找到发布按钮，准备点击...');
+        await publishButton.click();
+        await driver.sleep(3000);
+
+        console.log('✅ 微头条发布成功');
+        return {
+          success: true,
+          message: '微头条发布成功',
+        };
+      } catch (error) {
+        console.error(`点击发布按钮失败: ${error}`);
+        return {
+          success: false,
+          message: `找不到发布按钮或点击失败: ${error}`,
+        };
+      }
     } catch (error) {
       console.error(`微头条发布异常: ${error}`);
+      console.error('错误堆栈:', (error as Error).stack);
       return {
         success: false,
         message: `发布异常: ${error}`,
@@ -365,6 +453,7 @@ export class TouTiaoPublisher {
         setTimeout(async () => {
           try {
             await driver?.quit();
+            console.log('浏览器已关闭');
           } catch (e) {
             console.error(`关闭浏览器失败: ${e}`);
           }
