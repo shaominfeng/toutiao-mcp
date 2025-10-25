@@ -19,6 +19,7 @@ import * as dotenv from 'dotenv';
 import * as fs from 'fs';
 import * as path from 'path';
 import { marked } from 'marked';
+import { convertToWenyanHtml } from '../lib/wenyan-converter';
 
 // 加载环境变量
 dotenv.config();
@@ -792,23 +793,65 @@ A: 解决方案...
 }
 
 /**
- * 转换内容格式
+ * 方法1：使用 Marked 转换（传统方式）
+ * @param content 原始 Markdown 内容
+ * @returns 转换后的 HTML 内容
+ */
+function convertWithMarked(content: string): string {
+  try {
+    console.log('🔧 使用 Marked 转换器（传统方式）');
+    return marked.parse(content) as string;
+  } catch (error) {
+    console.error('❌ Marked 转换失败:', error);
+    return content;
+  }
+}
+
+/**
+ * 方法2：使用文颜（Wenyan）转换（新方式）
+ * @param content 原始 Markdown 内容
+ * @param theme 文颜主题（默认：lapis）
+ * @param highlightTheme 代码高亮主题（默认：github）
+ * @returns 转换后的 HTML 内容
+ */
+async function convertWithWenyan(
+  content: string,
+  theme: 'default' | 'orangeheart' | 'rainbow' | 'lapis' | 'pie' | 'maize' | 'purple' | 'phycat' = 'lapis',
+  highlightTheme: 'atom-one-dark' | 'atom-one-light' | 'dracula' | 'github-dark' | 'github' | 'monokai' | 'solarized-dark' | 'solarized-light' | 'xcode' = 'github'
+): Promise<string> {
+  try {
+    console.log(`🎨 使用文颜转换器 (主题: ${theme}, 代码高亮: ${highlightTheme})`);
+    const result = await convertToWenyanHtml(content, theme, highlightTheme, true);
+    return result.content;
+  } catch (error) {
+    console.error('❌ 文颜转换失败:', error);
+    console.log('💡 将返回原始 Markdown 内容');
+    return content;
+  }
+}
+
+/**
+ * 转换内容格式（统一接口）
  * @param content 原始 Markdown 内容
  * @param format 目标格式：'html' 或 'markdown'
+ * @param method 转换方法：'marked' 或 'wenyan'
  * @returns 转换后的内容
  */
-function convertContentFormat(content: string, format: 'html' | 'markdown' = 'markdown'): string {
+async function convertContentFormat(
+  content: string,
+  format: 'html' | 'markdown' = 'markdown',
+  method: 'marked' | 'wenyan' = 'marked'
+): Promise<string> {
   if (format === 'markdown') {
     return content; // 已经是 Markdown 格式，直接返回
   }
 
-  // 使用 marked 库转换为 HTML 格式
+  // 使用指定的方法转换为 HTML 格式
   if (format === 'html') {
-    try {
-      return marked.parse(content) as string;
-    } catch (error) {
-      console.error('❌ Markdown 转 HTML 失败:', error);
-      return content;
+    if (method === 'wenyan') {
+      return await convertWithWenyan(content);
+    } else {
+      return convertWithMarked(content);
     }
   }
 
@@ -913,9 +956,17 @@ async function main() {
     const methodStr = await askQuestion(rl, '\n请选择内容生成方式 (1=模拟内容, 2=AI生成) [默认:1]: ');
     const generateMethod: 'ai' | 'mock' = methodStr === '2' ? 'ai' : 'mock';
 
+    // 3.6 选择转换方法
+    console.log('\n🎨 请选择 Markdown 转换方法：');
+    console.log('   1. Marked（传统方式，简单快速）');
+    console.log('   2. 文颜 Wenyan（精美排版，适合公众号风格）');
+    const converterStr = await askQuestion(rl, '请选择 (1=Marked, 2=Wenyan) [默认:1]: ');
+    const converterMethod: 'marked' | 'wenyan' = converterStr === '2' ? 'wenyan' : 'marked';
+
     console.log(`\n📋 运行配置：`);
     console.log(`   模式: ${dryRun ? '测试模式（不会实际发布）' : '实际发布模式'}`);
     console.log(`   生成方式: ${generateMethod === 'ai' ? 'AI 生成' : '模拟内容'}`);
+    console.log(`   转换方法: ${converterMethod === 'wenyan' ? '文颜 Wenyan（精美排版）' : 'Marked（传统方式）'}`);
     console.log(`   主题: ${selectedTopic.title}`);
 
     // 4. 检查登录状态（非测试模式）
@@ -964,7 +1015,7 @@ async function main() {
 
     // 5.5 转换为 HTML 格式
     console.log('\n🔄 转换内容格式为 HTML...');
-    const htmlContent = convertContentFormat(markdownContent, 'html');
+    const htmlContent = await convertContentFormat(markdownContent, 'html', converterMethod);
     console.log('✅ 格式转换完成');
 
     // 6. 用户确认
