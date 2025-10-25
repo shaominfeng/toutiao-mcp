@@ -16,9 +16,138 @@ import { TouTiaoPublisher } from '../lib/publisher';
 import * as readline from 'readline';
 import axios from 'axios';
 import * as dotenv from 'dotenv';
+import * as fs from 'fs';
+import * as path from 'path';
+import { marked } from 'marked';
 
 // 加载环境变量
 dotenv.config();
+
+// ============================================================================
+// 配置常量
+// ============================================================================
+
+// 数据目录路径（项目根目录下的 data 文件夹）
+const DATA_DIR = path.join(__dirname, '../../data');
+
+// 确保数据目录存在
+if (!fs.existsSync(DATA_DIR)) {
+  fs.mkdirSync(DATA_DIR, { recursive: true });
+  console.log(`✅ 已创建数据目录: ${DATA_DIR}`);
+}
+
+// ============================================================================
+// 工具函数（需要在 marked 配置之前定义）
+// ============================================================================
+
+/**
+ * HTML 转义（用于代码块）
+ * @param text 文本内容
+ * @returns 转义后的内容
+ */
+function escapeHtml(text: string): string {
+  return text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
+// ============================================================================
+// 配置 Marked 渲染器以适配今日头条编辑器
+// ============================================================================
+
+const renderer = new marked.Renderer();
+
+// 自定义标题渲染
+renderer.heading = ({ tokens, depth }) => {
+  const text = renderer.parser.parseInline(tokens);
+  const sizes: Record<number, string> = {
+    1: '24px',
+    2: '20px',
+    3: '18px',
+    4: '16px',
+    5: '14px',
+    6: '14px'
+  };
+  const margins: Record<number, string> = {
+    1: '32px 0 16px 0',
+    2: '28px 0 16px 0',
+    3: '24px 0 16px 0',
+    4: '20px 0 12px 0',
+    5: '16px 0 12px 0',
+    6: '16px 0 12px 0'
+  };
+  return `<h${depth} style="font-size: ${sizes[depth]}; font-weight: bold; margin: ${margins[depth]}; line-height: 1.5;">${text}</h${depth}>\n`;
+};
+
+// 自定义段落渲染
+renderer.paragraph = ({ tokens }) => {
+  const text = renderer.parser.parseInline(tokens);
+  return `<p style="margin: 16px 0; line-height: 1.8; font-size: 16px; color: #333;">${text}</p>\n`;
+};
+
+// 自定义代码块渲染
+renderer.code = ({ text, lang }) => {
+  return `<pre style="background-color: #f5f5f5; padding: 16px; border-radius: 4px; overflow-x: auto; line-height: 1.6; margin: 16px 0;"><code style="font-family: Consolas, Monaco, 'Courier New', monospace; font-size: 14px;">${escapeHtml(text)}</code></pre>\n`;
+};
+
+// 自定义行内代码渲染
+renderer.codespan = ({ text }) => {
+  return `<code style="background-color: #f5f5f5; padding: 2px 6px; border-radius: 3px; font-family: Consolas, Monaco, monospace; font-size: 0.9em; color: #e83e8c;">${text}</code>`;
+};
+
+// 自定义列表渲染
+renderer.list = (token) => {
+  const tag = token.ordered ? 'ol' : 'ul';
+  const body = token.items.map(item => renderer.listitem(item)).join('');
+  return `<${tag} style="margin: 16px 0; padding-left: 24px; line-height: 1.8;">\n${body}</${tag}>\n`;
+};
+
+// 自定义列表项渲染
+renderer.listitem = (item) => {
+  const text = renderer.parser.parse(item.tokens);
+  return `<li style="margin: 8px 0;">${text}</li>\n`;
+};
+
+// 自定义链接渲染
+renderer.link = ({ href, title, tokens }) => {
+  const text = renderer.parser.parseInline(tokens);
+  const titleAttr = title ? ` title="${title}"` : '';
+  return `<a href="${href}"${titleAttr} style="color: #1356bd; text-decoration: none;">${text}</a>`;
+};
+
+// 自定义强调渲染
+renderer.strong = ({ tokens }) => {
+  const text = renderer.parser.parseInline(tokens);
+  return `<strong style="font-weight: bold;">${text}</strong>`;
+};
+
+// 自定义斜体渲染
+renderer.em = ({ tokens }) => {
+  const text = renderer.parser.parseInline(tokens);
+  return `<em style="font-style: italic;">${text}</em>`;
+};
+
+// 自定义分隔线渲染
+renderer.hr = () => {
+  return '<hr style="border: none; border-top: 1px solid #e8e8e8; margin: 24px 0;">\n';
+};
+
+// 自定义引用渲染
+renderer.blockquote = ({ tokens }) => {
+  const text = renderer.parser.parse(tokens);
+  return `<blockquote style="border-left: 4px solid #e8e8e8; padding-left: 16px; margin: 16px 0; color: #666; font-style: italic;">${text}</blockquote>\n`;
+};
+
+// 配置 marked 选项
+marked.setOptions({
+  renderer: renderer,
+  gfm: true, // 启用 GitHub Flavored Markdown
+  breaks: false, // 不将单个换行符转换为 <br>
+  pedantic: false,
+});
 
 // ============================================================================
 // NestJS 知识主题清单
@@ -440,6 +569,54 @@ function findTopicById(id: number): KnowledgeTopic | undefined {
 }
 
 /**
+ * 清理文件名，移除特殊字符
+ */
+function sanitizeFilename(filename: string): string {
+  return filename
+    .replace(/[\\/:*?"<>|]/g, '-')  // 替换特殊字符
+    .replace(/\s+/g, ' ')            // 合并多个空格
+    .trim();
+}
+
+/**
+ * 根据标题生成文件路径
+ */
+function getArticleFilePath(title: string): string {
+  const filename = sanitizeFilename(title) + '.md';
+  return path.join(DATA_DIR, filename);
+}
+
+/**
+ * 检查文章是否已存在
+ */
+function articleExists(title: string): boolean {
+  const filePath = getArticleFilePath(title);
+  return fs.existsSync(filePath);
+}
+
+/**
+ * 保存文章到文件
+ */
+function saveArticleToFile(title: string, content: string): string {
+  const filePath = getArticleFilePath(title);
+  fs.writeFileSync(filePath, content, 'utf-8');
+  console.log(`✅ 文章已保存到: ${filePath}`);
+  return filePath;
+}
+
+/**
+ * 从文件加载文章
+ */
+function loadArticleFromFile(title: string): string | null {
+  const filePath = getArticleFilePath(title);
+  if (!fs.existsSync(filePath)) {
+    return null;
+  }
+  console.log(`📖 从文件加载文章: ${filePath}`);
+  return fs.readFileSync(filePath, 'utf-8');
+}
+
+/**
  * 生成文章内容
  * @param topic 主题信息
  * @param method 生成方式：'ai' 使用 AI 生成，'mock' 使用模拟内容
@@ -625,161 +802,17 @@ function convertContentFormat(content: string, format: 'html' | 'markdown' = 'ma
     return content; // 已经是 Markdown 格式，直接返回
   }
 
-  // 转换为 HTML 格式
+  // 使用 marked 库转换为 HTML 格式
   if (format === 'html') {
-    return convertMarkdownToHtml(content);
+    try {
+      return marked.parse(content) as string;
+    } catch (error) {
+      console.error('❌ Markdown 转 HTML 失败:', error);
+      return content;
+    }
   }
 
   return content;
-}
-
-/**
- * 将 Markdown 转换为 HTML
- * @param markdown Markdown 内容
- * @returns HTML 内容
- */
-function convertMarkdownToHtml(markdown: string): string {
-  let html = '';
-  const lines = markdown.split('\n');
-  let inCodeBlock = false;
-  let codeBlockContent: string[] = [];
-  let codeLanguage = '';
-  let inList = false;
-
-  for (let i = 0; i < lines.length; i++) {
-    const line = lines[i];
-    const trimmedLine = line.trim();
-
-    // 处理代码块
-    if (trimmedLine.startsWith('```')) {
-      if (!inCodeBlock) {
-        // 开始代码块
-        inCodeBlock = true;
-        codeLanguage = trimmedLine.substring(3).trim();
-        codeBlockContent = [];
-      } else {
-        // 结束代码块
-        inCodeBlock = false;
-        html += `<pre><code class="language-${codeLanguage}">${escapeHtml(codeBlockContent.join('\n'))}</code></pre>\n`;
-        codeBlockContent = [];
-        codeLanguage = '';
-      }
-      continue;
-    }
-
-    // 在代码块内
-    if (inCodeBlock) {
-      codeBlockContent.push(line);
-      continue;
-    }
-
-    // 处理标题
-    if (trimmedLine.startsWith('### ')) {
-      if (inList) {
-        html += '</ul>\n';
-        inList = false;
-      }
-      html += `<h3>${processInlineFormatting(trimmedLine.substring(4))}</h3>\n`;
-    } else if (trimmedLine.startsWith('## ')) {
-      if (inList) {
-        html += '</ul>\n';
-        inList = false;
-      }
-      html += `<h2>${processInlineFormatting(trimmedLine.substring(3))}</h2>\n`;
-    } else if (trimmedLine.startsWith('# ')) {
-      if (inList) {
-        html += '</ul>\n';
-        inList = false;
-      }
-      html += `<h1>${processInlineFormatting(trimmedLine.substring(2))}</h1>\n`;
-    }
-    // 处理无序列表
-    else if (trimmedLine.match(/^[-*]\s+/)) {
-      if (!inList) {
-        html += '<ul>\n';
-        inList = true;
-      }
-      const content = trimmedLine.replace(/^[-*]\s+/, '');
-      html += `<li>${processInlineFormatting(content)}</li>\n`;
-    }
-    // 处理有序列表
-    else if (trimmedLine.match(/^\d+\.\s+/)) {
-      if (!inList) {
-        html += '<ol>\n';
-        inList = true;
-      }
-      const content = trimmedLine.replace(/^\d+\.\s+/, '');
-      html += `<li>${processInlineFormatting(content)}</li>\n`;
-    }
-    // 处理分隔线
-    else if (trimmedLine === '---' || trimmedLine === '***') {
-      if (inList) {
-        html += '</ul>\n';
-        inList = false;
-      }
-      html += '<hr>\n';
-    }
-    // 处理空行
-    else if (trimmedLine === '') {
-      if (inList) {
-        html += '</ul>\n';
-        inList = false;
-      }
-      html += '\n';
-    }
-    // 处理普通段落
-    else if (trimmedLine.length > 0) {
-      if (inList) {
-        html += '</ul>\n';
-        inList = false;
-      }
-      html += `<p>${processInlineFormatting(trimmedLine)}</p>\n`;
-    }
-  }
-
-  // 关闭未闭合的列表
-  if (inList) {
-    html += '</ul>\n';
-  }
-
-  return html;
-}
-
-/**
- * 处理内联格式（粗体、斜体、代码、链接等）
- * @param text 文本内容
- * @returns 处理后的 HTML
- */
-function processInlineFormatting(text: string): string {
-  // 处理行内代码 `code`
-  text = text.replace(/`([^`]+)`/g, '<code>$1</code>');
-
-  // 处理粗体 **text** 或 __text__
-  text = text.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
-  text = text.replace(/__([^_]+)__/g, '<strong>$1</strong>');
-
-  // 处理斜体 *text* 或 _text_
-  text = text.replace(/\*([^*]+)\*/g, '<em>$1</em>');
-  text = text.replace(/_([^_]+)_/g, '<em>$1</em>');
-
-  // 处理链接 [text](url)
-  text = text.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2">$1</a>');
-
-  return text;
-}
-
-/**
- * HTML 转义
- * @param text 文本内容
- * @returns 转义后的内容
- */
-function escapeHtml(text: string): string {
-  return text
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#039;');
 }
 
 /**
@@ -903,15 +936,48 @@ async function main() {
 
     // 5. 生成文章内容
     console.log('\n📝 [2/4] 生成文章内容...');
-    const article = await generateArticle(selectedTopic, generateMethod);
+
+    // 检查文章是否已存在
+    let markdownContent: string;
+    if (articleExists(selectedTopic.title)) {
+      console.log('\n📁 发现已存在的文章文件');
+      const existingContent = loadArticleFromFile(selectedTopic.title);
+      if (existingContent) {
+        console.log('✅ 成功加载已存在的文章');
+        console.log(`   文件路径: ${getArticleFilePath(selectedTopic.title)}`);
+        console.log(`   字数: ${existingContent.length} 字`);
+        markdownContent = existingContent;
+      } else {
+        console.log('⚠️  加载文章失败，将重新生成');
+        const article = await generateArticle(selectedTopic, generateMethod);
+        markdownContent = article.content;
+        // 保存生成的文章
+        saveArticleToFile(selectedTopic.title, markdownContent);
+      }
+    } else {
+      console.log('\n🆕 未找到已存在的文章，开始生成新文章');
+      const article = await generateArticle(selectedTopic, generateMethod);
+      markdownContent = article.content;
+      // 保存生成的文章
+      saveArticleToFile(selectedTopic.title, markdownContent);
+    }
+
+    // 5.5 转换为 HTML 格式
+    console.log('\n🔄 转换内容格式为 HTML...');
+    const htmlContent = convertContentFormat(markdownContent, 'html');
+    console.log('✅ 格式转换完成');
 
     // 6. 用户确认
     console.log('\n📝 [3/4] 内容预览');
     console.log('─'.repeat(80));
-    console.log(`标题: ${article.title}`);
-    console.log(`字数: ${article.content.length} 字`);
+    console.log(`标题: ${selectedTopic.title}`);
+    console.log(`字数: ${markdownContent.length} 字（Markdown）`);
+    console.log(`HTML 长度: ${htmlContent.length} 字符`);
     console.log('─'.repeat(80));
-    console.log(article.content.substring(0, 500) + '...\n（以下内容省略）');
+    console.log('Markdown 预览：');
+    console.log(markdownContent.substring(0, 300) + '...\n');
+    console.log('HTML 预览：');
+    console.log(htmlContent.substring(0, 300) + '...\n（以下内容省略）');
     console.log('─'.repeat(80));
 
     const confirmed = await waitForConfirmation(rl);
@@ -921,12 +987,12 @@ async function main() {
       return;
     }
 
-    // 7. 发布文章
+    // 7. 发布文章（使用 HTML 格式）
     console.log('\n📝 [4/4] 发布文章...');
     const auth = new TouTiaoAuth();
     const publisher = new TouTiaoPublisher(auth);
 
-    const success = await publishArticle(publisher, article.title, article.content, dryRun);
+    const success = await publishArticle(publisher, selectedTopic.title, htmlContent, dryRun);
 
     // 8. 显示结果
     console.log('\n' + '='.repeat(80));

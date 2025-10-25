@@ -23,6 +23,7 @@ toutiao_cookies.json
 # Downloaded images
 downloaded_images/
 uploads/
+data
 
 # IDE
 .vscode/
