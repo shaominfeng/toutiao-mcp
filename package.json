@@ -13,7 +13,8 @@
     "test-wenyan": "tsx src/scripts/test-wenyan-converter.ts",
     "auto-publish": "tsx src/scripts/auto-publish-news.ts",
     "auto-publish-ai": "tsx src/scripts/auto-publish-with-ai.ts",
-    "auto-publish-knowledge": "tsx src/scripts/auto-publish-knowledge.ts"
+    "auto-publish-knowledge": "tsx src/scripts/auto-publish-knowledge.ts",
+    "publish-custom": "tsx src/scripts/publish-custom-news.ts"
   },
   "keywords": [
     "toutiao",
