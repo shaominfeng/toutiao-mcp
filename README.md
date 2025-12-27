@@ -77,6 +77,112 @@ npm run build
 npm start
 ```
 
+## 🤖 自动发布微头条
+
+本项目提供了多种自动化发布微头条的方式，从热点新闻自动化到自定义内容发布，满足不同需求。
+
+### 方式一：自动发布热点新闻（推荐新手）
+
+从热点平台（微博、知乎、抖音等）获取热点新闻，AI 自动总结后发布：
+
+```bash
+# 交互式配置（推荐）
+npm run auto-publish
+
+# 快速模式
+npm run auto-publish -- --quick
+
+# 指定参数
+npm run auto-publish -- --source weibo --count 3 --interval 60
+```
+
+**支持的新闻源**：
+- `weibo` - 微博热搜
+- `zhihu` - 知乎热榜
+- `toutiao` - 今日头条热榜
+- `douyin` - 抖音热点
+- `baidu` - 百度热搜
+- `netease` - 网易新闻
+- `thepaper` - 澎湃新闻
+
+**配置选项**：
+- `--source` - 新闻源选择
+- `--count` - 发布数量（1-10条）
+- `--interval` - 发布间隔（秒）
+- `--topic` - 是否包含话题标签
+- `--emoji` - 是否添加表情符号
+
+### 方式二：AI 增强版自动发布（推荐）
+
+使用 AI 生成更高质量的内容和话题标签：
+
+```bash
+npm run auto-publish-ai
+```
+
+**特点**：
+- 🤖 AI 智能搜索网络并生成专业内容
+- 🏷️ 自动提取和优化话题标签
+- 🔍 支持测试模式（预览内容不实际发布）
+- ⚙️ 可配置 AI 提供商（OpenAI/Anthropic/Local）
+
+**环境变量配置**（可选）：
+```bash
+export OPENAI_API_KEY="your-key"
+export ANTHROPIC_API_KEY="your-key"
+```
+
+### 方式三：发布自定义内容
+
+从本地文件读取内容并发布，支持添加图片和话题：
+
+```bash
+# 基础用法
+npm run publish-custom -- ./news.txt
+
+# 带话题标签
+npm run publish-custom -- ./news.txt --topic "热点资讯"
+
+# 添加配图（最多9张）
+npm run publish-custom -- ./news.txt --images ./img1.jpg,./img2.jpg
+
+# 完整示例
+npm run publish-custom -- ./news.md --topic "科技" --images ./cover.jpg --yes
+```
+
+**参数说明**：
+- `--topic` - 话题标签
+- `--images` - 图片路径（逗号分隔）
+- `--yes` - 跳过预览确认
+
+### 方式四：知识分享自动发布
+
+专门为程序员技术知识分享设计，包含完整的学习路径：
+
+```bash
+npm run auto-publish-knowledge
+```
+
+**特点**：
+- 📚 包含30个 NestJS 主题的完整学习路径
+- 🎯 使用 AI 生成高质量技术文章
+- 📝 发布到今日头条文章（非微头条）
+
+### 📖 详细文档
+
+- **自动发布指南**：[AUTO_PUBLISH_GUIDE.md](./AUTO_PUBLISH_GUIDE.md)
+- **自定义发布指南**：[docs/PUBLISH-CUSTOM-GUIDE.md](./docs/PUBLISH-CUSTOM-GUIDE.md)
+- **知识分享指南**：[KNOWLEDGE_SHARING_GUIDE.md](./KNOWLEDGE_SHARING_GUIDE.md)
+- **快速开始**：[QUICKSTART.md](./QUICKSTART.md)
+
+### ⚠️ 使用建议
+
+1. **首次使用**：必须先运行 `npm run login` 登录
+2. **发布频率**：建议控制在每次3-5条，间隔1-2分钟
+3. **内容限制**：微头条建议2000字以内
+4. **图片要求**：支持JPG/PNG/GIF/WebP，建议小于5MB
+5. **平台规则**：遵守今日头条的内容发布规范
+
 ## 📁 项目结构
 
 ```
