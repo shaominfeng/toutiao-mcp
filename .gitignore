@@ -43,3 +43,5 @@ debug_*.html
 # Test files
 test_*.ts
 temp/
+.claude
+docs
