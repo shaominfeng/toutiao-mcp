@@ -58,8 +58,9 @@ LOG_LEVEL=info
 ENABLE_CONSOLE_LOG=true
 ENABLE_FILE_LOG=true
 
-# Optional: AI integration
-ANTHROPIC_API_KEY=sk-ant-xxx
+# Optional: AI integration (OpenAI-compatible API)
+# OPENAI_API_KEY=your-api-key
+# OPENAI_BASE_URL=https://api.openai.com/v1
 ```
 
 > [!IMPORTANT]
@@ -277,7 +278,7 @@ For faster operation:
 
 - **Cookie Encryption**: All cookies are encrypted at rest using AES-256-GCM
 - **Environment Variables**: Never commit `.env` files to version control
-- **API Keys**: Keep `ANTHROPIC_API_KEY` and `COOKIE_ENCRYPTION_KEY` secure
+- **API Keys**: Keep `OPENAI_API_KEY` and `COOKIE_ENCRYPTION_KEY` secure
 - **Access Control**: Consider running the MCP server in a restricted environment
 
 ## Examples

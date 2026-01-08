@@ -2,18 +2,20 @@
  * 今日头条认证管理模块
  */
 
-import * as fs from 'fs';
-import * as path from 'path';
 import axios, { AxiosInstance } from 'axios';
 import { Builder, By, until, WebDriver, WebElement } from 'selenium-webdriver';
 import * as chrome from 'selenium-webdriver/chrome';
-import { Cookie, CookiesData, UserInfo } from '../types';
+import { Cookie, UserInfo } from '../types';
 import { TOUTIAO_URLS, DEFAULT_HEADERS, SELENIUM_CONFIG, getCookiesFilePath } from './config';
+import { EncryptedFileCookieStorage } from '../utils/cookie-storage';
+import { logger } from '../utils/logger';
 
 export class TouTiaoAuth {
   private cookiesFile: string;
   private axiosInstance: AxiosInstance;
   private cookies: Cookie[] = [];
+  private cookieStorage: EncryptedFileCookieStorage;
+  private initialized: boolean = false;
 
   constructor(cookiesFile?: string) {
     this.cookiesFile = cookiesFile || getCookiesFilePath();
@@ -21,48 +23,46 @@ export class TouTiaoAuth {
       headers: { ...DEFAULT_HEADERS },
       timeout: 30000,
     });
-    this.loadCookies();
+    this.cookieStorage = new EncryptedFileCookieStorage(this.cookiesFile);
   }
 
   /**
-   * 从文件加载 Cookie
+   * 初始化认证管理器（加载 Cookie）
    */
-  private loadCookies(): void {
-    try {
-      if (fs.existsSync(this.cookiesFile)) {
-        const data = fs.readFileSync(this.cookiesFile, 'utf-8');
-        const cookiesData: CookiesData = JSON.parse(data);
-        this.cookies = cookiesData.cookies || [];
-
-        // 更新 axios 实例的 Cookie
-        this.updateAxiosCookies();
-
-        console.log(`已加载 ${this.cookies.length} 个 Cookie`);
-      }
-    } catch (error) {
-      console.warn(`加载 Cookie 失败: ${error}`);
+  async init(): Promise<void> {
+    if (!this.initialized) {
+      await this.loadCookies();
+      this.initialized = true;
     }
   }
 
   /**
-   * 保存 Cookie 到文件
+   * 从文件加载 Cookie（使用加密存储）
    */
-  private saveCookies(cookies: Cookie[]): void {
+  private async loadCookies(): Promise<void> {
     try {
-      const dir = path.dirname(this.cookiesFile);
-      if (!fs.existsSync(dir)) {
-        fs.mkdirSync(dir, { recursive: true });
-      }
+      this.cookies = await this.cookieStorage.load();
 
-      const cookiesData: CookiesData = {
-        cookies,
-        timestamp: Date.now(),
-      };
+      // 更新 axios 实例的 Cookie
+      this.updateAxiosCookies();
 
-      fs.writeFileSync(this.cookiesFile, JSON.stringify(cookiesData, null, 2), 'utf-8');
-      console.log(`已保存 ${cookies.length} 个 Cookie`);
+      logger.info('Cookies loaded from encrypted storage', { count: this.cookies.length });
     } catch (error) {
-      console.error(`保存 Cookie 失败: ${error}`);
+      logger.warn('Failed to load cookies from encrypted storage', error as Error);
+      this.cookies = [];
+    }
+  }
+
+  /**
+   * 保存 Cookie 到文件（使用加密存储）
+   */
+  private async saveCookies(cookies: Cookie[]): Promise<void> {
+    try {
+      await this.cookieStorage.save(cookies);
+      logger.info('Cookies saved to encrypted storage', { count: cookies.length });
+    } catch (error) {
+      logger.error('Failed to save cookies to encrypted storage', error as Error);
+      throw error;
     }
   }
 
@@ -184,11 +184,11 @@ export class TouTiaoAuth {
           secure: cookie.secure,
         }));
 
-        this.saveCookies(cookies);
+        await this.saveCookies(cookies);
         this.cookies = cookies;
         this.updateAxiosCookies();
 
-        console.log('登录成功，已保存 Cookie');
+        logger.info('Login successful, cookies saved');
         return true;
       } else {
         console.error('登录超时或失败');
@@ -286,21 +286,19 @@ export class TouTiaoAuth {
   /**
    * 登出当前账户
    */
-  logout(): boolean {
+  async logout(): Promise<boolean> {
     try {
       // 清除内存中的 Cookie
       this.cookies = [];
       this.axiosInstance.defaults.headers.common['Cookie'] = '';
 
-      // 删除本地 Cookie 文件
-      if (fs.existsSync(this.cookiesFile)) {
-        fs.unlinkSync(this.cookiesFile);
-      }
+      // 删除加密的 Cookie 文件
+      await this.cookieStorage.clear();
 
-      console.log('已清除登录信息');
+      logger.info('Logged out, cookies cleared');
       return true;
     } catch (error) {
-      console.error(`登出失败: ${error}`);
+      logger.error('Failed to logout', error as Error);
       return false;
     }
   }

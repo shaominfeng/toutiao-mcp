@@ -261,6 +261,7 @@ async function main() {
   // 2. 检查登录状态
   console.log('\n📝 [1/5] 检查登录状态...');
   const auth = new TouTiaoAuth();
+  await auth.init(); // 初始化加密存储
 
   if (!config.dryRun) {
     const isLoggedIn = await auth.checkLoginStatus();

@@ -22,9 +22,10 @@ let authManager: TouTiaoAuth | null = null;
 let publisher: TouTiaoPublisher | null = null;
 let analytics: TouTiaoAnalytics | null = null;
 
-function initializeServices(): void {
+async function initializeServices(): Promise<void> {
   try {
     authManager = new TouTiaoAuth();
+    await authManager.init(); // 初始化并加载加密的 Cookie
     publisher = new TouTiaoPublisher(authManager);
     analytics = new TouTiaoAnalytics(authManager);
     console.log('✅ 服务实例初始化成功');
@@ -321,7 +322,7 @@ async function main() {
   console.log('🚀 正在启动今日头条 MCP 服务器...');
 
   // 初始化服务
-  initializeServices();
+  await initializeServices();
 
   console.log('📋 可用功能:');
   console.log('  - 用户认证: login_with_credentials, check_login_status');

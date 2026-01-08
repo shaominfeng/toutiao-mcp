@@ -167,6 +167,7 @@ async function autoPublishNews(config: PublishConfig): Promise<void> {
   // 1. 初始化认证
   console.log('\n📝 步骤 1/4: 检查登录状态...');
   const auth = new TouTiaoAuth();
+  await auth.init(); // 初始化加密存储
   const isLoggedIn = await auth.checkLoginStatus();
 
   if (!isLoggedIn) {

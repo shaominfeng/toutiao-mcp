@@ -28,6 +28,7 @@ async function main() {
   console.log();
 
   const auth = new TouTiaoAuth();
+  await auth.init(); // 初始化加密存储
   const publisher = new TouTiaoPublisher(auth);
 
   // 检查登录状态

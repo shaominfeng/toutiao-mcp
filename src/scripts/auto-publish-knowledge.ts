@@ -975,6 +975,7 @@ async function main() {
     if (!dryRun) {
       console.log('\n📝 [1/4] 检查登录状态...');
       const auth = new TouTiaoAuth();
+      await auth.init(); // 初始化加密存储
       const isLoggedIn = await auth.checkLoginStatus();
 
       if (!isLoggedIn) {
@@ -1043,6 +1044,7 @@ async function main() {
     // 7. 发布文章（使用 HTML 格式）
     console.log('\n📝 [4/4] 发布文章...');
     const auth = new TouTiaoAuth();
+    await auth.init(); // 初始化加密存储
     const publisher = new TouTiaoPublisher(auth);
 
     const success = await publishArticle(publisher, selectedTopic.title, htmlContent, dryRun);

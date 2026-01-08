@@ -58,8 +58,9 @@ LOG_LEVEL=info
 ENABLE_CONSOLE_LOG=true
 ENABLE_FILE_LOG=true
 
-# 可选：AI 集成
-ANTHROPIC_API_KEY=sk-ant-xxx
+# 可选：AI 集成（使用 OpenAI 兼容 API）
+# OPENAI_API_KEY=your-api-key
+# OPENAI_BASE_URL=https://api.openai.com/v1
 ```
 
 > [!IMPORTANT]
@@ -277,7 +278,7 @@ toutiao-mcp/
 
 - **Cookie 加密**：所有 Cookie 使用 AES-256-GCM 静态加密
 - **环境变量**：永远不要将 `.env` 文件提交到版本控制
-- **API 密钥**：保护好 `ANTHROPIC_API_KEY` 和 `COOKIE_ENCRYPTION_KEY`
+- **API 密钥**：保护好 `OPENAI_API_KEY` 和 `COOKIE_ENCRYPTION_KEY`
 - **访问控制**：考虑在受限环境中运行 MCP 服务器
 
 ## 示例

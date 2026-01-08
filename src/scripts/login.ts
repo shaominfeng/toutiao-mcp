@@ -13,6 +13,7 @@ async function main() {
   console.log();
 
   const auth = new TouTiaoAuth();
+  await auth.init(); // 初始化加密存储
 
   console.log('正在启动浏览器...');
   console.log('请在浏览器中完成以下操作：');
