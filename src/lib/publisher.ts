@@ -6,6 +6,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { Builder, By, until, WebDriver } from 'selenium-webdriver';
 import * as chrome from 'selenium-webdriver/chrome';
+import * as edge from 'selenium-webdriver/edge';
 import sharp from 'sharp';
 import { TouTiaoAuth } from './auth';
 import {
@@ -49,20 +50,13 @@ export class TouTiaoPublisher {
   }
 
   /**
-   * 设置 Chrome 浏览器驱动
+   * 设置Chrome浏览器驱动（连接到已运行的Chrome）
    */
   private async setupDriver(): Promise<WebDriver> {
     const options = new chrome.Options();
 
-    SELENIUM_CONFIG.chromeOptions.forEach(option => {
-      options.addArguments(option);
-    });
-
-    options.addArguments(`--user-agent=${DEFAULT_HEADERS['User-Agent']}`);
-
-    if (SELENIUM_CONFIG.headless) {
-      options.addArguments('--headless');
-    }
+    // 连接到已运行的Chrome实例（需要先用 --remote-debugging-port=9222 启动Chrome）
+    options.debuggerAddress('127.0.0.1:9222');
 
     const driver = await new Builder()
       .forBrowser('chrome')
@@ -73,7 +67,7 @@ export class TouTiaoPublisher {
       implicit: SELENIUM_CONFIG.implicitWait,
     });
 
-    console.log('ChromeDriver 初始化成功');
+    console.log('已连接到现有Chrome实例');
     return driver;
   }
 
@@ -361,7 +355,31 @@ export class TouTiaoPublisher {
         await editor.clear();
         await editor.sendKeys(microContent);
       } else {
-        await editor.click();
+        // 先尝试移除可能存在的遮罩层
+        try {
+          console.log('检查并移除遮罩层...');
+          await driver.executeScript(`
+            const masks = document.querySelectorAll('.byte-drawer-mask, .drawer-mask, [class*="mask"]');
+            masks.forEach(mask => {
+              if (mask.style.background === 'transparent' || mask.style.display !== 'none') {
+                mask.style.display = 'none';
+                mask.remove();
+              }
+            });
+          `);
+          await driver.sleep(500);
+        } catch (e) {
+          console.log('移除遮罩层失败，继续尝试点击');
+        }
+
+        // 使用 JavaScript 设置焦点，避免被遮罩层拦截
+        try {
+          await driver.executeScript('arguments[0].focus();', editor);
+          await driver.sleep(500);
+        } catch (e) {
+          console.log('设置焦点失败，尝试点击');
+          await editor.click();
+        }
         await driver.sleep(1000);
         const safeContent = microContent.replace(/\\/g, '\\\\').replace(/`/g, '\\`').replace(/\n/g, '<br>');
         await driver.executeScript(`arguments[0].innerHTML = \`<p>${safeContent}</p>\``, editor);
@@ -426,7 +444,16 @@ export class TouTiaoPublisher {
         }
 
         console.log('找到发布按钮，准备点击...');
-        await publishButton.click();
+
+        // 使用 JavaScript 点击，避免被其他元素拦截
+        try {
+          await driver.executeScript('arguments[0].click();', publishButton);
+          console.log('使用 JavaScript 点击发布按钮');
+        } catch (e) {
+          console.log('JavaScript 点击失败，尝试普通点击');
+          await publishButton.click();
+        }
+
         await driver.sleep(3000);
 
         console.log('✅ 微头条发布成功');
