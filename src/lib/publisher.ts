@@ -50,24 +50,35 @@ export class TouTiaoPublisher {
   }
 
   /**
-   * 设置Chrome浏览器驱动（连接到已运行的Chrome）
+   * 设置Chrome浏览器驱动（自动启动Chrome）
    */
   private async setupDriver(): Promise<WebDriver> {
     const options = new chrome.Options();
 
-    // 连接到已运行的Chrome实例（需要先用 --remote-debugging-port=9222 启动Chrome）
-    options.debuggerAddress('127.0.0.1:9222');
+    // 添加浏览器选项
+    SELENIUM_CONFIG.chromeOptions.forEach(option => {
+      options.addArguments(option);
+    });
+
+    // 设置用户代理
+    options.addArguments(`--user-agent=${DEFAULT_HEADERS['User-Agent']}`);
+
+    // 无头模式
+    if (SELENIUM_CONFIG.headless) {
+      options.addArguments('--headless');
+    }
 
     const driver = await new Builder()
       .forBrowser('chrome')
       .setChromeOptions(options)
       .build();
 
+    // 设置超时
     await driver.manage().setTimeouts({
       implicit: SELENIUM_CONFIG.implicitWait,
     });
 
-    console.log('已连接到现有Chrome实例');
+    console.log('ChromeDriver 初始化成功');
     return driver;
   }
 
