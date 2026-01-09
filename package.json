@@ -22,7 +22,6 @@
   "author": "",
   "license": "MIT",
   "devDependencies": {
-    "@types/marked": "^5.0.2",
     "@types/node": "^24.9.1",
     "tsx": "^4.20.6",
     "typescript": "^5.9.3"
@@ -32,11 +31,10 @@
     "@types/selenium-webdriver": "^4.35.1",
     "@wenyan-md/core": "^1.0.12",
     "axios": "^1.12.2",
-    "docx": "^9.5.1",
     "dotenv": "^17.2.3",
-    "markdown-it": "^14.1.0",
-    "marked": "^16.4.1",
     "selenium-webdriver": "^4.37.0",
-    "sharp": "^0.34.4"
+    "sharp": "^0.34.4",
+    "winston": "^3.19.0",
+    "winston-daily-rotate-file": "^5.0.0"
   }
 }
