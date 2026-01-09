@@ -1,199 +1,156 @@
-# 今日头条 MCP 服务器
+# Toutiao MCP Server
 
-中文 | [English](README.en.md)
+[English](README.en.md) | 中文
 
-一个用于自动化发布内容到今日头条的模型上下文协议（MCP）服务器。这个基于 TypeScript 的服务器提供与 Claude 等 AI 助手的无缝集成，简化内容创作和分发工作流程。
+一个基于 Model Context Protocol (MCP) 的今日头条自动化发布服务器，让 AI 助手能够直接发布和管理今日头条内容。
 
-## 功能特性
+## 特性
 
-- **自动化认证**：通过 Selenium WebDriver 登录，支持安全的 Cookie 管理
-- **内容发布**：发布图文文章和微头条，支持图片、标签和分类
-- **内容管理**：列表查询和删除已发布文章
-- **数据分析**：跟踪账号表现并生成数据报告
-- **AI 集成**：内置 AI 驱动的内容生成支持
-- **Markdown 支持**：将 Markdown 内容转换为今日头条兼容的 HTML
-- **文言格式**：支持文言 Markdown 转换以增强格式化效果
-- **安全存储**：加密的 Cookie 存储用于会话管理
+- **MCP 集成** - 为 Claude 等 AI 助手提供标准化的今日头条 API 接口
+- **自动化认证** - 使用 Selenium WebDriver 实现登录和会话管理
+- **内容发布** - 支持发布图文文章和微头条，包含图片、标签和分类
+- **安全存储** - AES-256-GCM 加密的 Cookie 存储
+- **命令行工具** - 提供独立的发布脚本，无需 MCP 也可使用
 
-## 前置要求
+## 快速开始
+
+### 前置条件
 
 - Node.js 18+
-- Chrome/Chromium 浏览器（用于 Selenium 自动化）
+- Chrome 或 Chromium 浏览器
 - 今日头条账号
 
-## 安装
-
-1. 克隆仓库：
+### 安装
 
 ```bash
+# 克隆仓库
 git clone https://github.com/yourusername/toutiao-mcp.git
 cd toutiao-mcp
-```
 
-2. 安装依赖：
-
-```bash
+# 安装依赖
 npm install
-```
 
-3. 配置环境变量：
-
-```bash
+# 配置环境变量
 cp .env.example .env
 ```
 
-编辑 `.env` 文件并设置你的配置：
+编辑 `.env` 文件，设置必需的配置：
 
 ```env
-# Cookie 加密密钥（必填）
+# Cookie 加密密钥（至少 32 字符）
 COOKIE_ENCRYPTION_KEY=your-secure-password-at-least-32-characters-long
 
-# Selenium 设置
+# Selenium 配置
 SELENIUM_HEADLESS=false
-SELENIUM_IMPLICIT_WAIT=10000
-SELENIUM_EXPLICIT_WAIT=30000
 
-# 日志配置
-LOG_LEVEL=info
-ENABLE_CONSOLE_LOG=true
-ENABLE_FILE_LOG=true
-
-# 可选：AI 集成（使用 OpenAI 兼容 API）
+# 可选：OpenAI API（用于 AI 生成内容）
 # OPENAI_API_KEY=your-api-key
 # OPENAI_BASE_URL=https://api.openai.com/v1
 ```
 
 > [!IMPORTANT]
-> `COOKIE_ENCRYPTION_KEY` 必须至少 32 个字符长。更改此密钥会导致现有存储的 Cookie 失效。
+> `COOKIE_ENCRYPTION_KEY` 必须至少 32 个字符。修改此密钥会使已保存的 Cookie 失效。
 
-4. 构建项目：
-
-```bash
-npm run build
-```
-
-## 使用方法
-
-### 作为 MCP 服务器运行
-
-启动 MCP 服务器以与 AI 助手集成：
-
-```bash
-npm start
-```
-
-服务器会暴露 MCP 工具，可被兼容的 AI 客户端调用。
-
-### 开发模式
-
-在开发模式下运行（支持热重载）：
-
-```bash
-npm run dev
-```
-
-### 身份认证
-
-首次使用 Selenium 登录：
+### 首次登录
 
 ```bash
 npm run login
 ```
 
-这会打开一个浏览器窗口，你可以手动登录。Cookie 会被保存供后续会话使用。
+浏览器会自动打开，请在浏览器中完成登录。Cookie 会被安全保存，后续无需重复登录。
 
-### 发布内容
+## 使用方式
 
-#### 自动发布脚本
+### 方式一：作为 MCP 服务器
 
-从知识库发布内容：
-
-```bash
-npm run auto-publish-knowledge
-```
-
-使用 AI 生成内容并发布：
+启动 MCP 服务器，与 AI 助手集成：
 
 ```bash
-npm run auto-publish-ai
+npm start
 ```
 
-发布自定义内容：
+在 Claude Desktop 配置文件中添加：
+
+```json
+{
+  "mcpServers": {
+    "toutiao": {
+      "command": "node",
+      "args": ["/path/to/toutiao-mcp/dist/index.js"]
+    }
+  }
+}
+```
+
+然后你就可以在 Claude 中这样使用：
+
+```
+"帮我发布一篇关于 TypeScript 最佳实践的文章"
+"发布一条关于今日科技新闻的微头条"
+```
+
+### 方式二：独立命令行工具
+
+#### 自动发布热点新闻
+
+从热点新闻源获取内容并发布：
 
 ```bash
-npm run publish-custom
+# 交互式配置
+npm run auto-publish
+
+# 快速模式（使用默认配置）
+npm run auto-publish -- --quick
+
+# 自定义参数
+npm run auto-publish -- --source weibo --count 3 --interval 60
 ```
 
-#### 使用 MCP 工具
+#### 发布自定义内容
 
-服务器运行后，AI 助手可以调用以下工具：
+从文本文件发布内容：
 
-**认证**
-- `login_with_credentials` - 使用用户名/密码登录
-- `check_login_status` - 验证当前登录状态
+```bash
+# 基础用法
+npm run publish-custom -- content.txt
 
-**发布**
-- `publish_article` - 发布完整文章
-- `publish_micro_post` - 发布微头条（类似推文）
+# 添加话题标签
+npm run publish-custom -- content.txt --topic "科技"
 
-**管理**
-- `get_article_list` - 列出已发布文章
-- `delete_article` - 删除文章
+# 添加图片
+npm run publish-custom -- content.txt --images img1.jpg,img2.jpg
 
-**分析**
-- `get_account_overview` - 获取账号统计数据
-- `get_article_stats` - 获取指定文章的统计数据
-- `generate_report` - 生成分析报告（日报/周报/月报）
+# 自动确认（跳过预览）
+npm run publish-custom -- content.txt --topic "科技" --yes
+```
 
-## MCP 工具参考
+## MCP 工具
 
 ### publish_article
 
-发布完整文章到今日头条。
+发布完整的图文文章。
 
+**参数：**
 ```typescript
 {
-  title: string;        // 2-30 个字符
-  content: string;      // 文章内容（支持 Markdown）
-  images?: string[];    // 图片文件路径
+  title: string;        // 文章标题（2-30 字符）
+  content: string;      // 文章内容（支持 HTML 或 Markdown）
+  images?: string[];    // 图片路径列表
   tags?: string[];      // 文章标签
   category?: string;    // 文章分类
 }
 ```
 
-**示例：**
-
-```json
-{
-  "title": "TypeScript 入门指南",
-  "content": "# 简介\n\nTypeScript 是 JavaScript 的类型化超集...",
-  "images": ["./images/typescript-logo.png"],
-  "tags": ["TypeScript", "编程", "教程"],
-  "category": "科技"
-}
-```
-
 ### publish_micro_post
 
-发布短内容微头条。
+发布微头条（类似推文）。
 
+**参数：**
 ```typescript
 {
-  content: string;      // 内容
-  images?: string[];    // 最多 9 张图片
+  content: string;      // 微头条内容
+  images?: string[];    // 图片路径（最多 9 张）
   topic?: string;       // 话题标签
-}
-```
-
-### get_article_list
-
-获取已发布文章列表。
-
-```typescript
-{
-  page?: number;        // 默认：1
-  pageSize?: number;    // 默认：20
-  status?: string;      // 'all' | 'published' | 'draft' | 'review'
 }
 ```
 
@@ -206,146 +163,112 @@ toutiao-mcp/
 │   ├── lib/
 │   │   ├── auth.ts           # 认证管理
 │   │   ├── publisher.ts      # 发布功能
-│   │   ├── analytics.ts      # 分析和报告
-│   │   ├── config.ts         # 配置管理
+│   │   ├── analytics.ts      # 数据分析
 │   │   └── wenyan-converter.ts # Markdown 转换
-│   ├── scripts/              # 自动化脚本
-│   ├── utils/                # 工具函数（日志、Cookie 存储等）
+│   ├── scripts/              # 独立脚本
+│   │   ├── login.ts          # 登录脚本
+│   │   ├── auto-publish-news.ts    # 自动发布
+│   │   └── publish-custom-news.ts  # 自定义发布
+│   ├── utils/                # 工具函数
+│   │   ├── logger.ts         # 日志系统
+│   │   └── cookie-storage.ts # Cookie 加密存储
 │   └── types/                # TypeScript 类型定义
-├── examples/                  # 示例内容文件
-├── logs/                     # 应用日志
-└── data/                     # 数据存储
+└── examples/                  # 示例文件
 ```
 
-## 配置
+## 配置选项
 
-### Selenium 选项
+### Selenium 配置
 
 控制浏览器自动化行为：
 
-- `SELENIUM_HEADLESS`：无头模式运行浏览器（true/false）
-- `SELENIUM_IMPLICIT_WAIT`：元素的默认等待时间（毫秒）
-- `SELENIUM_EXPLICIT_WAIT`：操作的最大等待时间（毫秒）
-
-### 内容设置
-
-- `MAX_IMAGE_SIZE`：图片文件最大大小（字节）
-- `IMAGE_QUALITY`：图片压缩质量（1-100）
-- `DEFAULT_CATEGORY`：默认文章分类
+```env
+SELENIUM_HEADLESS=false           # 无头模式
+SELENIUM_IMPLICIT_WAIT=10000      # 隐式等待时间（毫秒）
+SELENIUM_EXPLICIT_WAIT=30000      # 显式等待时间（毫秒）
+```
 
 ### 日志配置
 
-- `LOG_LEVEL`：日志详细程度（error, warn, info, debug）
-- `LOG_DIR`：日志文件目录
-- `ENABLE_CONSOLE_LOG`：在控制台显示日志
-- `ENABLE_FILE_LOG`：将日志写入文件
+```env
+LOG_LEVEL=info                    # 日志级别：error | warn | info | debug
+ENABLE_CONSOLE_LOG=true           # 控制台输出
+ENABLE_FILE_LOG=true              # 文件输出
+```
 
 ## 故障排除
 
-### 登录问题
+### 登录失败
+
+如果自动登录遇到问题：
+
+```bash
+# 删除旧的 Cookie 文件
+rm toutiao_cookies.json
+
+# 重新登录
+npm run login
+```
 
 > [!TIP]
-> 如果自动登录失败，尝试运行 `npm run login` 在浏览器窗口中手动认证。
-
-**常见问题：**
-- 需要验证码验证 - 在 `npm run login` 期间手动完成
-- 会话过期 - 删除 `toutiao_cookies.json` 并重新登录
-- 凭据无效 - 验证环境变量中的用户名/密码
+> 首次登录或遇到验证码时，请在浏览器窗口中手动完成验证。Cookie 会自动保存。
 
 ### 发布失败
 
 **图片上传错误：**
-- 确保图片在最大大小限制以内
-- 验证图片路径正确且可访问
-- 检查图片格式是否支持（JPG、PNG、GIF）
+- 确保图片文件存在且可访问
+- 检查图片格式（支持 JPG、PNG、GIF）
+- 验证图片大小不超过限制
 
 **内容被拒绝：**
-- 查看今日头条的内容指南
-- 确保标题长度为 2-30 个字符
-- 检查是否有受限关键词或主题
+- 标题长度必须在 2-30 字符之间
+- 避免使用违规关键词
+- 查看今日头条的内容发布规范
 
-### 性能
+### Chrome Driver 问题
 
 > [!NOTE]
-> 首次运行可能需要较长时间，因为 Selenium 会自动下载 Chrome 驱动。
+> 首次运行时，Selenium 会自动下载 ChromeDriver，这可能需要几分钟时间。
 
-提升运行速度：
-- 启用无头模式：`SELENIUM_HEADLESS=true`
-- 如果网络快，减少等待时间
-- 使用更小的图片或降低 `IMAGE_QUALITY`
-
-## 安全考虑
-
-- **Cookie 加密**：所有 Cookie 使用 AES-256-GCM 静态加密
-- **环境变量**：永远不要将 `.env` 文件提交到版本控制
-- **API 密钥**：保护好 `OPENAI_API_KEY` 和 `COOKIE_ENCRYPTION_KEY`
-- **访问控制**：考虑在受限环境中运行 MCP 服务器
-
-## 示例
-
-### 基础文章发布
+如果下载失败，可以手动下载并设置环境变量：
 
 ```bash
-# 使用示例内容测试发布
-npm run test
+export CHROME_DRIVER_PATH=/path/to/chromedriver
 ```
-
-### 文言格式转换
-
-服务器支持文言 Markdown 格式以增强 HTML 渲染：
-
-```bash
-npm run test-wenyan
-```
-
-## API 集成
-
-这个 MCP 服务器设计用于与支持模型上下文协议的 AI 助手配合工作。将其连接到 Claude 或其他兼容客户端以启用自然语言内容发布。
-
-**与 Claude 的示例工作流：**
-
-1. 启动 MCP 服务器：`npm start`
-2. 配置 Claude 连接到服务器
-3. 询问 Claude："发布一篇关于 TypeScript 最佳实践的文章"
-4. Claude 使用 MCP 工具进行认证和发布
 
 ## 开发
 
-### 构建
-
 ```bash
+# 开发模式（热重载）
+npm run dev
+
+# 构建
 npm run build
+
+# 测试发布
+npm run test
 ```
 
-### 运行测试
+## 安全建议
 
-```bash
-npm test
-```
-
-### 项目脚本
-
-- `npm run dev` - 开发模式（支持热重载）
-- `npm run build` - 编译 TypeScript 到 JavaScript
-- `npm run login` - 交互式登录
-- `npm test` - 测试发布功能
-- `npm run auto-publish-news` - 从新闻源自动发布
-- `npm run auto-publish-ai` - 发布 AI 生成的内容
-- `npm run auto-publish-knowledge` - 从知识库发布
+- **保护密钥** - 不要将 `.env` 文件提交到版本控制
+- **加密存储** - Cookie 使用 AES-256-GCM 加密存储
+- **定期更新** - 及时更新依赖以修复安全漏洞
+- **访问控制** - 在生产环境中限制 MCP 服务器的访问权限
 
 ## 限制
 
-- 需要具有内容发布权限的活跃今日头条账号
-- 根据账号等级有速率限制
-- 某些内容可能需要今日头条手动审核
-- 如果今日头条更新其 UI，Selenium 自动化可能会失效
+- 需要有效的今日头条创作者账号
+- 发布频率受账号等级限制
+- 某些内容可能需要平台审核
+- UI 变更可能导致自动化失效（需要更新 selectors）
 
-## 资源
+## 相关资源
 
-- [模型上下文协议](https://modelcontextprotocol.io)
-- [今日头条创作者平台](https://mp.toutiao.com)
-- [Selenium WebDriver 文档](https://www.selenium.dev/documentation/)
+- [Model Context Protocol](https://modelcontextprotocol.io) - MCP 官方文档
+- [今日头条创作者平台](https://mp.toutiao.com) - 内容管理后台
+- [Selenium WebDriver](https://www.selenium.dev/documentation/) - 浏览器自动化
 
 ## 许可证
 
-MIT
+MIT License - 详见 [LICENSE](LICENSE) 文件

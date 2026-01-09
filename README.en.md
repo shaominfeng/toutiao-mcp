@@ -1,199 +1,156 @@
 # Toutiao MCP Server
 
-[中文](README.md) | English
+English | [中文](README.md)
 
-A Model Context Protocol (MCP) server for automating content publishing to Toutiao (今日头条), China's leading content platform. This TypeScript-based server provides seamless integration with AI assistants like Claude to streamline content creation and distribution workflows.
+A Model Context Protocol (MCP) server for automating content publishing to Toutiao (今日头条), enabling AI assistants to publish and manage content directly.
 
 ## Features
 
-- **Automated Authentication**: Login via Selenium WebDriver with secure cookie management
-- **Content Publishing**: Publish articles and micro-posts with images, tags, and categories
-- **Content Management**: List, query, and delete published articles
-- **Analytics**: Track account performance and generate data reports
-- **AI Integration**: Built-in support for AI-powered content generation
-- **Markdown Support**: Convert Markdown content to Toutiao-compatible HTML
-- **Wenyan Format**: Support for Wenyan (文言) Markdown conversion for enhanced formatting
-- **Secure Storage**: Encrypted cookie storage for session management
+- **MCP Integration** - Standardized Toutiao API interface for AI assistants like Claude
+- **Automated Authentication** - Login and session management using Selenium WebDriver
+- **Content Publishing** - Publish articles and micro-posts with images, tags, and categories
+- **Secure Storage** - AES-256-GCM encrypted cookie storage
+- **CLI Tools** - Standalone publishing scripts that work without MCP
 
-## Prerequisites
+## Quick Start
+
+### Prerequisites
 
 - Node.js 18+
-- Chrome/Chromium browser (for Selenium automation)
-- Toutiao account
+- Chrome or Chromium browser
+- Toutiao creator account
 
-## Installation
-
-1. Clone the repository:
+### Installation
 
 ```bash
+# Clone repository
 git clone https://github.com/yourusername/toutiao-mcp.git
 cd toutiao-mcp
-```
 
-2. Install dependencies:
-
-```bash
+# Install dependencies
 npm install
-```
 
-3. Configure environment variables:
-
-```bash
+# Configure environment
 cp .env.example .env
 ```
 
-Edit `.env` and set your configuration:
+Edit `.env` file with required configuration:
 
 ```env
-# Cookie encryption key (required)
+# Cookie encryption key (minimum 32 characters)
 COOKIE_ENCRYPTION_KEY=your-secure-password-at-least-32-characters-long
 
-# Selenium settings
+# Selenium configuration
 SELENIUM_HEADLESS=false
-SELENIUM_IMPLICIT_WAIT=10000
-SELENIUM_EXPLICIT_WAIT=30000
 
-# Logging
-LOG_LEVEL=info
-ENABLE_CONSOLE_LOG=true
-ENABLE_FILE_LOG=true
-
-# Optional: AI integration (OpenAI-compatible API)
+# Optional: OpenAI API (for AI-generated content)
 # OPENAI_API_KEY=your-api-key
 # OPENAI_BASE_URL=https://api.openai.com/v1
 ```
 
 > [!IMPORTANT]
-> The `COOKIE_ENCRYPTION_KEY` must be at least 32 characters long. Changing this key will invalidate existing stored cookies.
+> `COOKIE_ENCRYPTION_KEY` must be at least 32 characters. Changing this key will invalidate saved cookies.
 
-4. Build the project:
-
-```bash
-npm run build
-```
-
-## Usage
-
-### Running as MCP Server
-
-Start the MCP server for integration with AI assistants:
-
-```bash
-npm start
-```
-
-The server exposes MCP tools that can be called by compatible AI clients.
-
-### Development Mode
-
-Run in development mode with hot reload:
-
-```bash
-npm run dev
-```
-
-### Authentication
-
-First-time login using Selenium:
+### Initial Login
 
 ```bash
 npm run login
 ```
 
-This opens a browser window where you can manually log in. Cookies are saved for subsequent sessions.
+A browser window will open automatically. Complete the login in the browser, and cookies will be securely saved for future sessions.
 
-### Publishing Content
+## Usage
 
-#### Automated Publishing Scripts
+### Option 1: As MCP Server
 
-Publish content from your knowledge base:
-
-```bash
-npm run auto-publish-knowledge
-```
-
-Publish with AI-generated content:
+Start the MCP server for AI assistant integration:
 
 ```bash
-npm run auto-publish-ai
+npm start
 ```
 
-Publish custom content:
+Add to your Claude Desktop config:
+
+```json
+{
+  "mcpServers": {
+    "toutiao": {
+      "command": "node",
+      "args": ["/path/to/toutiao-mcp/dist/index.js"]
+    }
+  }
+}
+```
+
+Then use it in Claude:
+
+```
+"Help me publish an article about TypeScript best practices"
+"Publish a micro-post about today's tech news"
+```
+
+### Option 2: Standalone CLI Tools
+
+#### Auto-Publish Trending News
+
+Fetch and publish content from trending news sources:
 
 ```bash
-npm run publish-custom
+# Interactive configuration
+npm run auto-publish
+
+# Quick mode (default settings)
+npm run auto-publish -- --quick
+
+# Custom parameters
+npm run auto-publish -- --source weibo --count 3 --interval 60
 ```
 
-#### Using MCP Tools
+#### Publish Custom Content
 
-Once the server is running, AI assistants can call these tools:
+Publish content from text files:
 
-**Authentication**
-- `login_with_credentials` - Login with username/password
-- `check_login_status` - Verify current login state
+```bash
+# Basic usage
+npm run publish-custom -- content.txt
 
-**Publishing**
-- `publish_article` - Publish a complete article
-- `publish_micro_post` - Publish a micro-post (similar to a tweet)
+# Add topic hashtag
+npm run publish-custom -- content.txt --topic "Technology"
 
-**Management**
-- `get_article_list` - List published articles
-- `delete_article` - Remove an article
+# Add images
+npm run publish-custom -- content.txt --images img1.jpg,img2.jpg
 
-**Analytics**
-- `get_account_overview` - Get account statistics
-- `get_article_stats` - Get statistics for a specific article
-- `generate_report` - Generate analytics reports (daily/weekly/monthly)
+# Auto-confirm (skip preview)
+npm run publish-custom -- content.txt --topic "Technology" --yes
+```
 
-## MCP Tools Reference
+## MCP Tools
 
 ### publish_article
 
-Publish a complete article to Toutiao.
+Publish a complete article with rich content.
 
+**Parameters:**
 ```typescript
 {
-  title: string;        // 2-30 characters
-  content: string;      // Article content (supports Markdown)
+  title: string;        // Article title (2-30 characters)
+  content: string;      // Article content (HTML or Markdown)
   images?: string[];    // Image file paths
   tags?: string[];      // Article tags
   category?: string;    // Article category
 }
 ```
 
-**Example:**
-
-```json
-{
-  "title": "Getting Started with TypeScript",
-  "content": "# Introduction\n\nTypeScript is a typed superset of JavaScript...",
-  "images": ["./images/typescript-logo.png"],
-  "tags": ["TypeScript", "Programming", "Tutorial"],
-  "category": "科技"
-}
-```
-
 ### publish_micro_post
 
-Publish a short-form micro-post.
+Publish a micro-post (tweet-like short content).
 
+**Parameters:**
 ```typescript
 {
-  content: string;      // Post content
-  images?: string[];    // Up to 9 images
+  content: string;      // Micro-post content
+  images?: string[];    // Image paths (max 9)
   topic?: string;       // Topic hashtag
-}
-```
-
-### get_article_list
-
-Retrieve published articles.
-
-```typescript
-{
-  page?: number;        // Default: 1
-  pageSize?: number;    // Default: 20
-  status?: string;      // 'all' | 'published' | 'draft' | 'review'
 }
 ```
 
@@ -207,145 +164,111 @@ toutiao-mcp/
 │   │   ├── auth.ts           # Authentication management
 │   │   ├── publisher.ts      # Publishing functionality
 │   │   ├── analytics.ts      # Analytics and reporting
-│   │   ├── config.ts         # Configuration management
 │   │   └── wenyan-converter.ts # Markdown conversion
-│   ├── scripts/              # Automation scripts
-│   ├── utils/                # Utilities (logger, cookie storage, etc.)
+│   ├── scripts/              # Standalone scripts
+│   │   ├── login.ts          # Login script
+│   │   ├── auto-publish-news.ts    # Auto-publish
+│   │   └── publish-custom-news.ts  # Custom publish
+│   ├── utils/                # Utility functions
+│   │   ├── logger.ts         # Logging system
+│   │   └── cookie-storage.ts # Encrypted cookie storage
 │   └── types/                # TypeScript type definitions
-├── examples/                  # Sample content files
-├── logs/                     # Application logs
-└── data/                     # Data storage
+└── examples/                  # Example files
 ```
 
 ## Configuration
 
-### Selenium Options
+### Selenium Settings
 
 Control browser automation behavior:
 
-- `SELENIUM_HEADLESS`: Run browser in headless mode (true/false)
-- `SELENIUM_IMPLICIT_WAIT`: Default wait time for elements (ms)
-- `SELENIUM_EXPLICIT_WAIT`: Maximum wait time for operations (ms)
+```env
+SELENIUM_HEADLESS=false           # Headless mode
+SELENIUM_IMPLICIT_WAIT=10000      # Implicit wait timeout (ms)
+SELENIUM_EXPLICIT_WAIT=30000      # Explicit wait timeout (ms)
+```
 
-### Content Settings
+### Logging Settings
 
-- `MAX_IMAGE_SIZE`: Maximum image file size in bytes
-- `IMAGE_QUALITY`: Image compression quality (1-100)
-- `DEFAULT_CATEGORY`: Default article category
-
-### Logging
-
-- `LOG_LEVEL`: Logging verbosity (error, warn, info, debug)
-- `LOG_DIR`: Directory for log files
-- `ENABLE_CONSOLE_LOG`: Show logs in console
-- `ENABLE_FILE_LOG`: Write logs to files
+```env
+LOG_LEVEL=info                    # Log level: error | warn | info | debug
+ENABLE_CONSOLE_LOG=true           # Console output
+ENABLE_FILE_LOG=true              # File output
+```
 
 ## Troubleshooting
 
 ### Login Issues
 
-> [!TIP]
-> If automatic login fails, try running `npm run login` to manually authenticate in the browser window.
+If automatic login fails:
 
-**Common problems:**
-- Captcha verification required - complete manually during `npm run login`
-- Session expired - delete `toutiao_cookies.json` and login again
-- Invalid credentials - verify username/password in environment variables
+```bash
+# Remove old cookie file
+rm toutiao_cookies.json
+
+# Login again
+npm run login
+```
+
+> [!TIP]
+> For first-time login or when encountering CAPTCHA, complete verification manually in the browser window. Cookies will be saved automatically.
 
 ### Publishing Failures
 
 **Image upload errors:**
-- Ensure images are under the maximum size limit
-- Verify image paths are correct and accessible
-- Check that images are in supported formats (JPG, PNG, GIF)
+- Ensure image files exist and are accessible
+- Check image format (JPG, PNG, GIF supported)
+- Verify image size is within limits
 
 **Content rejected:**
-- Review Toutiao's content guidelines
-- Ensure title length is 2-30 characters
-- Check for restricted keywords or topics
+- Title must be 2-30 characters
+- Avoid prohibited keywords
+- Review Toutiao's content publishing guidelines
 
-### Performance
+### Chrome Driver Issues
 
 > [!NOTE]
-> The first run may take longer as Selenium downloads the Chrome driver automatically.
+> On first run, Selenium automatically downloads ChromeDriver, which may take a few minutes.
 
-For faster operation:
-- Enable headless mode: `SELENIUM_HEADLESS=true`
-- Reduce wait times if your network is fast
-- Use smaller images or lower `IMAGE_QUALITY`
-
-## Security Considerations
-
-- **Cookie Encryption**: All cookies are encrypted at rest using AES-256-GCM
-- **Environment Variables**: Never commit `.env` files to version control
-- **API Keys**: Keep `OPENAI_API_KEY` and `COOKIE_ENCRYPTION_KEY` secure
-- **Access Control**: Consider running the MCP server in a restricted environment
-
-## Examples
-
-### Basic Article Publishing
+If download fails, manually download and set environment variable:
 
 ```bash
-# Test publishing with sample content
-npm run test
+export CHROME_DRIVER_PATH=/path/to/chromedriver
 ```
-
-### Wenyan Format Conversion
-
-The server supports Wenyan Markdown format for enhanced HTML rendering:
-
-```bash
-npm run test-wenyan
-```
-
-## API Integration
-
-This MCP server is designed to work with AI assistants that support the Model Context Protocol. Connect it to Claude or other compatible clients to enable natural language content publishing.
-
-**Example workflow with Claude:**
-
-1. Start the MCP server: `npm start`
-2. Configure Claude to connect to the server
-3. Ask Claude: "Publish an article about TypeScript best practices"
-4. Claude uses the MCP tools to authenticate and publish
 
 ## Development
 
-### Building
-
 ```bash
+# Development mode (hot reload)
+npm run dev
+
+# Build
 npm run build
+
+# Test publishing
+npm run test
 ```
 
-### Running Tests
+## Security Recommendations
 
-```bash
-npm test
-```
-
-### Project Scripts
-
-- `npm run dev` - Development mode with hot reload
-- `npm run build` - Compile TypeScript to JavaScript
-- `npm run login` - Interactive login
-- `npm test` - Test publishing functionality
-- `npm run auto-publish-news` - Auto-publish from news sources
-- `npm run auto-publish-ai` - Publish AI-generated content
-- `npm run auto-publish-knowledge` - Publish from knowledge base
+- **Protect Keys** - Never commit `.env` file to version control
+- **Encrypted Storage** - Cookies are encrypted with AES-256-GCM
+- **Regular Updates** - Keep dependencies updated for security patches
+- **Access Control** - Restrict MCP server access in production environments
 
 ## Limitations
 
-- Requires active Toutiao account with content publishing permissions
-- Rate limits apply based on your account level
-- Some content may require manual review by Toutiao
-- Selenium automation may break if Toutiao updates their UI
+- Requires valid Toutiao creator account
+- Publishing frequency limited by account level
+- Some content may require platform review
+- UI changes may break automation (selectors need updates)
 
 ## Resources
 
-- [Model Context Protocol](https://modelcontextprotocol.io)
-- [Toutiao Creator Platform](https://mp.toutiao.com)
-- [Selenium WebDriver Documentation](https://www.selenium.dev/documentation/)
+- [Model Context Protocol](https://modelcontextprotocol.io) - Official MCP documentation
+- [Toutiao Creator Platform](https://mp.toutiao.com) - Content management backend
+- [Selenium WebDriver](https://www.selenium.dev/documentation/) - Browser automation
 
 ## License
 
-MIT
+MIT License - see [LICENSE](LICENSE) file for details

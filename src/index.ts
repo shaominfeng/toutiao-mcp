@@ -119,61 +119,62 @@ const tools: Tool[] = [
       required: ['content'],
     },
   },
-  {
-    name: 'get_article_list',
-    description: '获取已发布文章列表',
-    inputSchema: {
-      type: 'object',
-      properties: {
-        page: { type: 'number', description: '页码，默认1' },
-        pageSize: { type: 'number', description: '每页数量，默认20' },
-        status: { type: 'string', description: '文章状态 (all/published/draft/review)' },
-      },
-    },
-  },
-  {
-    name: 'delete_article',
-    description: '删除指定文章',
-    inputSchema: {
-      type: 'object',
-      properties: {
-        articleId: { type: 'string', description: '文章ID' },
-      },
-      required: ['articleId'],
-    },
-  },
-  {
-    name: 'get_account_overview',
-    description: '获取账户数据概览',
-    inputSchema: {
-      type: 'object',
-      properties: {},
-    },
-  },
-  {
-    name: 'get_article_stats',
-    description: '获取指定文章的统计数据',
-    inputSchema: {
-      type: 'object',
-      properties: {
-        articleId: { type: 'string', description: '文章ID' },
-      },
-      required: ['articleId'],
-    },
-  },
-  {
-    name: 'generate_report',
-    description: '生成数据分析报告',
-    inputSchema: {
-      type: 'object',
-      properties: {
-        reportType: {
-          type: 'string',
-          description: '报告类型 (daily/weekly/monthly)，默认weekly',
-        },
-      },
-    },
-  },
+  // 以下功能暂时不可用，因API端点需要进一步调试
+  // {
+  //   name: 'get_article_list',
+  //   description: '获取已发布文章列表',
+  //   inputSchema: {
+  //     type: 'object',
+  //     properties: {
+  //       page: { type: 'number', description: '页码，默认1' },
+  //       pageSize: { type: 'number', description: '每页数量，默认20' },
+  //       status: { type: 'string', description: '文章状态 (all/published/draft/review)' },
+  //     },
+  //   },
+  // },
+  // {
+  //   name: 'delete_article',
+  //   description: '删除指定文章',
+  //   inputSchema: {
+  //     type: 'object',
+  //     properties: {
+  //       articleId: { type: 'string', description: '文章ID' },
+  //     },
+  //     required: ['articleId'],
+  //   },
+  // },
+  // {
+  //   name: 'get_account_overview',
+  //   description: '获取账户数据概览',
+  //   inputSchema: {
+  //     type: 'object',
+  //     properties: {},
+  //   },
+  // },
+  // {
+  //   name: 'get_article_stats',
+  //   description: '获取指定文章的统计数据',
+  //   inputSchema: {
+  //     type: 'object',
+  //     properties: {
+  //       articleId: { type: 'string', description: '文章ID' },
+  //     },
+  //     required: ['articleId'],
+  //   },
+  // },
+  // {
+  //   name: 'generate_report',
+  //   description: '生成数据分析报告',
+  //   inputSchema: {
+  //     type: 'object',
+  //     properties: {
+  //       reportType: {
+  //         type: 'string',
+  //         description: '报告类型 (daily/weekly/monthly)，默认weekly',
+  //       },
+  //     },
+  //   },
+  // },
 ];
 
 // 处理工具列表请求
@@ -249,49 +250,49 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         }
         break;
 
-      case 'get_article_list':
-        if (!(await authManager.checkLoginStatus())) {
-          result = { success: false, message: '请先登录' };
-        } else {
-          result = await publisher.getArticleList(
-            Number(getArg('page')) || 1,
-            Number(getArg('pageSize')) || 20,
-            String(getArg('status') || 'all')
-          );
-        }
-        break;
+      // case 'get_article_list':
+      //   if (!(await authManager.checkLoginStatus())) {
+      //     result = { success: false, message: '请先登录' };
+      //   } else {
+      //     result = await publisher.getArticleList(
+      //       Number(getArg('page')) || 1,
+      //       Number(getArg('pageSize')) || 20,
+      //       String(getArg('status') || 'all')
+      //     );
+      //   }
+      //   break;
 
-      case 'delete_article':
-        if (!(await authManager.checkLoginStatus())) {
-          result = { success: false, message: '请先登录' };
-        } else {
-          result = await publisher.deleteArticle(String(getArg('articleId')));
-        }
-        break;
+      // case 'delete_article':
+      //   if (!(await authManager.checkLoginStatus())) {
+      //     result = { success: false, message: '请先登录' };
+      //   } else {
+      //     result = await publisher.deleteArticle(String(getArg('articleId')));
+      //   }
+      //   break;
 
-      case 'get_account_overview':
-        if (!(await authManager.checkLoginStatus())) {
-          result = { success: false, message: '请先登录' };
-        } else {
-          result = await analytics.getAccountOverview();
-        }
-        break;
+      // case 'get_account_overview':
+      //   if (!(await authManager.checkLoginStatus())) {
+      //     result = { success: false, message: '请先登录' };
+      //   } else {
+      //     result = await analytics.getAccountOverview();
+      //   }
+      //   break;
 
-      case 'get_article_stats':
-        if (!(await authManager.checkLoginStatus())) {
-          result = { success: false, message: '请先登录' };
-        } else {
-          result = await analytics.getArticleStats(String(getArg('articleId')));
-        }
-        break;
+      // case 'get_article_stats':
+      //   if (!(await authManager.checkLoginStatus())) {
+      //     result = { success: false, message: '请先登录' };
+      //   } else {
+      //     result = await analytics.getArticleStats(String(getArg('articleId')));
+      //   }
+      //   break;
 
-      case 'generate_report':
-        if (!(await authManager.checkLoginStatus())) {
-          result = { success: false, message: '请先登录' };
-        } else {
-          result = await analytics.generateReport(String(getArg('reportType') || 'weekly'));
-        }
-        break;
+      // case 'generate_report':
+      //   if (!(await authManager.checkLoginStatus())) {
+      //     result = { success: false, message: '请先登录' };
+      //   } else {
+      //     result = await analytics.generateReport(String(getArg('reportType') || 'weekly'));
+      //   }
+      //   break;
 
       default:
         result = { success: false, message: `未知的工具: ${name}` };
@@ -331,9 +332,6 @@ async function main() {
   console.log('📋 可用功能:');
   console.log('  - 用户认证: login_with_credentials, check_login_status');
   console.log('  - 内容发布: publish_article, publish_micro_post');
-  console.log('  - 内容管理: get_article_list, delete_article');
-  console.log('  - 数据分析: get_account_overview, get_article_stats');
-  console.log('  - 报告生成: generate_report');
 
   const transport = new StdioServerTransport();
   await server.connect(transport);

@@ -51,6 +51,7 @@ export interface PublishResult {
   message: string;
   title?: string;
   articleId?: string;
+  url?: string;
 }
 
 export interface ArticleInfo {
