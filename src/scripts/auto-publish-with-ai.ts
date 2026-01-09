@@ -10,9 +10,13 @@
  * npm run auto-publish-ai
  */
 
+import { loadEnv } from '../config/env';
 import { TouTiaoAuth } from '../lib/auth';
 import { TouTiaoPublisher } from '../lib/publisher';
 import axios from 'axios';
+
+// 加载环境变量
+loadEnv();
 
 // ============================================================================
 // 配置区域

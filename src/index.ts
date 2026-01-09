@@ -4,8 +4,12 @@
  * 今日头条 MCP 服务器主入口
  */
 
+import { loadEnv } from './config/env.js';
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
+
+// 加载环境变量
+loadEnv();
 import {
   CallToolRequestSchema,
   ListToolsRequestSchema,

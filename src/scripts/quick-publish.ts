@@ -4,9 +4,13 @@
  * 快速发布脚本 - 跳过登录验证，直接发布
  */
 
+import { loadEnv } from '../config/env';
 import * as fs from 'fs';
 import { TouTiaoAuth } from '../lib/auth';
 import { TouTiaoPublisher } from '../lib/publisher';
+
+// 加载环境变量
+loadEnv();
 
 async function quickPublish(contentFile: string) {
   try {
@@ -26,6 +30,7 @@ async function quickPublish(contentFile: string) {
     // 创建认证和发布器实例
     console.log('\n📝 初始化发布器...');
     const auth = new TouTiaoAuth();
+    await auth.init(); // 初始化加密存储
     const publisher = new TouTiaoPublisher(auth);
 
     // 直接发布，跳过登录验证

@@ -4,9 +4,13 @@
  * 今日头条发布测试脚本
  */
 
+import { loadEnv } from '../config/env';
 import * as readline from 'readline';
 import { TouTiaoAuth } from '../lib/auth';
 import { TouTiaoPublisher } from '../lib/publisher';
+
+// 加载环境变量
+loadEnv();
 
 const rl = readline.createInterface({
   input: process.stdin,

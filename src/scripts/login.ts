@@ -4,7 +4,11 @@
  * 今日头条登录脚本
  */
 
+import { loadEnv } from '../config/env';
 import { TouTiaoAuth } from '../lib/auth';
+
+// 加载环境变量
+loadEnv();
 
 async function main() {
   console.log('='.repeat(60));

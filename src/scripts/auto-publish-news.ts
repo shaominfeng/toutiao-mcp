@@ -6,8 +6,12 @@
  * 3. 自动发布到今日头条微头条
  */
 
+import { loadEnv } from '../config/env';
 import { TouTiaoAuth } from '../lib/auth';
 import { TouTiaoPublisher } from '../lib/publisher';
+
+// 加载环境变量
+loadEnv();
 
 // 热点新闻源配置
 const NEWS_SOURCES = {

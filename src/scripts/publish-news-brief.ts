@@ -4,9 +4,13 @@
  * 发布新闻简报到今日头条微头条
  */
 
+import { loadEnv } from '../config/env';
 import * as fs from 'fs';
 import { TouTiaoAuth } from '../lib/auth';
 import { TouTiaoPublisher } from '../lib/publisher';
+
+// 加载环境变量
+loadEnv();
 
 async function main() {
   console.log('='.repeat(60));
@@ -32,6 +36,7 @@ async function main() {
   // 初始化认证
   console.log('🔐 检查登录状态...');
   const auth = new TouTiaoAuth();
+  await auth.init(); // 初始化加密存储
   const cookies = auth.getCookies();
 
   if (cookies.length === 0) {

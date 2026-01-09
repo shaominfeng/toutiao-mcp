@@ -4,10 +4,14 @@
  * 支持带格式的文本内容（保留换行、段落等格式）
  */
 
+import { loadEnv } from '../config/env';
 import * as fs from 'fs';
 import * as path from 'path';
 import { TouTiaoAuth } from '../lib/auth';
 import { TouTiaoPublisher } from '../lib/publisher';
+
+// 加载环境变量
+loadEnv();
 
 interface PublishOptions {
   contentFile: string;    // 内容文件路径
